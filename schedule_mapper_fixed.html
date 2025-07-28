@@ -139,18 +139,23 @@
             border-radius: 1rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             overflow: hidden;
-            height: 900px;
             position: relative;
+            width: 100%;
+            /* Maintain aspect ratio 736:900 (width:height) */
+            padding-bottom: calc(900 / 736 * 100%);
+            height: 0;
         }
 
         #map {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             background-image: url('https://i.postimg.cc/KzS7YM1v/UP-Diliman-Campus-Map-Brent-Antigua.jpg');
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
-            position: relative;
         }
 
         #modal-map {
@@ -330,7 +335,7 @@
                 <div id="map" class="loading">
                     <div class="spinner"></div>
                 </div>
-                <div class="map-overlay" style="display: none;">
+                <div class="map-overlay" style="display: flex;">
                     <button id="add-pin-location"><i class="fas fa-map-pin"></i> Pin Location</button>
                 </div>
             </div>
@@ -384,9 +389,10 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM fully loaded and parsed');
+            const pinLocationSelect = document.getElementById('pin-location');
             const campusLocations = {
                 // ACADEMIC BUILDINGS
-                'ASIAN CENTER / GT-Toyota Asian Cultural Center': { label: 'AC/GT', grid: 'A3', pixelX: 257, pixelY: 151 },
+                'ASIAN CENTER / GT-Toyota Asian Cultural Center': { label: 'AC/GT', grid: 'A3', pixelX: 257, pixelY: 149 },
                 'ASIAN INSTITUTE OF TOURISM': { label: 'AIT', grid: 'F1, F2', pixelX: 116, pixelY: 542 },
                 'COLLEGE OF ARCHITECTURE (Bldg. 1)': { label: 'CA1', grid: 'D7', pixelX: 530, pixelY: 386 },
                 'Juguilon Hall': { label: 'CA/JH', grid: 'D6, D7', pixelX: 515, pixelY: 401 },
@@ -628,15 +634,50 @@
                 ]
             };
 
-            const startLocationSelect = document.getElementById('start-location');
-            const endLocationSelect = document.getElementById('end-location');
+            // Removed references to non-existent start-location and end-location elements
             const mapElement = document.getElementById('map');
             const mapOverlay = document.querySelector('.map-overlay');
             const calculateButton = document.getElementById('calculate-route');
+            const clearPinsButton = document.getElementById('clear-pins');
+            const addPinLocationButton = document.getElementById('add-pin-location');
             const resultContainer = document.querySelector('.result-container');
             const walkTimeElement = document.getElementById('walk-time');
             const distanceElement = document.getElementById('distance');
             const routeDescriptionElement = document.getElementById('route-description');
+
+            // Safely add event listeners only if elements exist
+            if (calculateButton) {
+                calculateButton.addEventListener('click', function() {
+                    // Your calculate route logic here
+                });
+            }
+            if (clearPinsButton) {
+                clearPinsButton.addEventListener('click', function() {
+                    // Your clear pins logic here
+                });
+            }
+            if (addPinLocationButton) {
+                addPinLocationButton.addEventListener('click', function() {
+                    // Your add pin location logic here
+                });
+            }
+            if (pinLocationSelect) {
+            pinLocationSelect.addEventListener('change', function() {
+            const locName = pinLocationSelect.value;
+            if (!locName) return;
+            const loc = campusLocations[locName];
+            if (!loc) {
+            console.warn('Location not found in campusLocations:', locName);
+            return;
+            }
+            if (typeof loc.pixelX !== 'number' || isNaN(loc.pixelX) || typeof loc.pixelY !== 'number' || isNaN(loc.pixelY)) {
+            console.warn('Invalid coordinates for location:', locName, loc.pixelX, loc.pixelY);
+            return;
+            }
+            addPin(locName, loc.pixelX, loc.pixelY);
+            });
+            }
+
             // const scheduleDaySelect = document.getElementById('schedule-day');
             // const scheduleDayDisplay = document.getElementById('schedule-day-display');
             // const scheduleBody = document.getElementById('schedule-body');
@@ -644,6 +685,7 @@
             let startPin = null;
             let endPin = null;
             let currentPinningMode = null; // 'start' or 'end'
+            let pinningMode = false;
 
             // --- LINEMAP INTEGRATION ---
             // Paste your linemap JSON here or load it via fetch if running a server
@@ -2923,37 +2965,79 @@
                 const existingRoute = document.getElementById('route-svg');
                 if (existingRoute) existingRoute.remove();
             }
-            document.getElementById('clear-pins').addEventListener('click', clearPins);
+            const clearPinsEl = document.getElementById('clear-pins');
+            if (clearPinsEl) clearPinsEl.addEventListener('click', clearPins);
 
             // Pinning mode logic
-            let pinningMode = false;
-            document.getElementById('add-pin-location').addEventListener('click', function() {
+            const addPinLocationEl = document.getElementById('add-pin-location');
+            if (addPinLocationEl) addPinLocationEl.addEventListener('click', function() {
                 pinningMode = true;
                 this.textContent = 'Click on the map to pin location';
             });
-            // Place pin on map click (only if pinningMode is true)
-            mapElement.addEventListener('click', function(e) {
-                if (!pinningMode) return;
+            // Convert display coordinates to natural image coordinates
+            function toNaturalCoords(x, y) {
                 const rect = mapElement.getBoundingClientRect();
-                const x = Math.round(e.clientX - rect.left);
-                const y = Math.round(e.clientY - rect.top);
-                pinCoords.push({ x, y });
-                placePin(x, y, `pin-${pinCoords.length - 1}`);
-                pinningMode = false;
-                document.getElementById('add-pin-location').textContent = 'Pin Location';
+                const naturalWidth = 736; // original image width
+                const naturalHeight = 900; // original image height
+                const scaleX = naturalWidth / rect.width;
+                const scaleY = naturalHeight / rect.height;
+                return {
+                    x: Math.round(x * scaleX),
+                    y: Math.round(y * scaleY)
+                };
+            }
+            // Convert natural image coordinates to display coordinates
+            function toDisplayCoords(x, y) {
+                const rect = mapElement.getBoundingClientRect();
+                const naturalWidth = 736; // original image width
+                const naturalHeight = 900; // original image height
+                const scaleX = rect.width / naturalWidth;
+                const scaleY = rect.height / naturalHeight;
+                return {
+                    x: x * scaleX,
+                    y: y * scaleY
+                };
+            }
+            // Place pin on map click (only if pinningMode is true)
+            if (mapElement) mapElement.addEventListener('click', function(e) {
+            if (!pinningMode) return;
+            const rect = mapElement.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+            const nat = toNaturalCoords(clickX, clickY);
+            if (typeof nat.x !== 'number' || isNaN(nat.x) || typeof nat.y !== 'number' || isNaN(nat.y)) {
+            console.warn('Invalid coordinates from map click:', nat.x, nat.y);
+            return;
+            }
+            pinCoords.push({ x: nat.x, y: nat.y });
+            placePin(nat.x, nat.y, `pin-${pinCoords.length - 1}`);
+            pinningMode = false;
+            document.getElementById('add-pin-location').textContent = 'Pin Location';
             });
 
             // Place pin from dropdown selection
-            const pinLocationSelect = document.getElementById('pin-location');
-            pinLocationSelect.addEventListener('change', () => {
-                const locName = pinLocationSelect.value;
-                if (locName && campusLocations[locName]) {
-                    const locData = campusLocations[locName];
-                    pinCoords.push({ x: locData.pixelX, y: locData.pixelY });
-                    placePin(locData.pixelX, locData.pixelY, `pin-${pinCoords.length - 1}`);
-                }
-                pinLocationSelect.value = '';
+
+            if (pinLocationSelect) pinLocationSelect.addEventListener('change', () => {
+            const locName = pinLocationSelect.value;
+            if (!locName) return;
+            const loc = campusLocations[locName];
+            if (!loc) {
+            console.warn('Location not found in campusLocations:', locName);
+            return;
+            }
+            if (typeof loc.pixelX !== 'number' || isNaN(loc.pixelX) || typeof loc.pixelY !== 'number' || isNaN(loc.pixelY)) {
+            console.warn('Invalid coordinates for location:', locName, loc.pixelX, loc.pixelY);
+            return;
+            }
+            addPin(locName, loc.pixelX, loc.pixelY);
             });
+
+            // Define addPin function to add pin coordinates and place pin marker
+            function addPin(name, x, y) {
+                pinCoords.push({ x, y });
+                placePin(x, y, `pin-${pinCoords.length - 1}`);
+                pinLocationSelect.value = '';
+            }
 
             // Populate Pin Locations dropdown (and remove old function if present)
             function populatePinLocationDropdown() {
@@ -3057,6 +3141,19 @@
                 }
             });
 
+            const addPinAEl = document.getElementById('add-pin-a');
+            if (addPinAEl) addPinAEl.addEventListener('click', () => {
+                currentPinningMode = 'start';
+                alert('Click anywhere on the map to pin the START location.');
+            });
+
+            const addPinBEl = document.getElementById('add-pin-b');
+            if (addPinBEl) addPinBEl.addEventListener('click', () => {
+                currentPinningMode = 'end';
+                alert('Click on the map to set your END location.');
+            });
+
+        // Removed unused Dijkstra logic
 
         // Function to draw route lines connecting points on the map
         function drawRouteLines(points) {
@@ -3076,11 +3173,13 @@
             mapElement.appendChild(svg);
 
             for (let i = 0; i < points.length - 1; i++) {
+                const p1 = toDisplayCoords(points[i].x, points[i].y);
+                const p2 = toDisplayCoords(points[i + 1].x, points[i + 1].y);
                 const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', points[i].x);
-                line.setAttribute('y1', points[i].y);
-                line.setAttribute('x2', points[i + 1].x);
-                line.setAttribute('y2', points[i + 1].y);
+                line.setAttribute('x1', p1.x);
+                line.setAttribute('y1', p1.y);
+                line.setAttribute('x2', p2.x);
+                line.setAttribute('y2', p2.y);
                 line.setAttribute('stroke', 'var(--primary)');
                 line.setAttribute('stroke-width', '4');
                 line.setAttribute('class', 'route-line');
@@ -3123,8 +3222,37 @@
         window.addEventListener('resize', drawDebugOverlay);
         window.addEventListener('load', drawDebugOverlay);
 
+        // Function to reposition all pins and redraw route lines on resize
+        function repositionPinsAndRoutes() {
+            // Remove all existing pins
+            document.querySelectorAll('.pin-marker').forEach(el => el.remove());
+            // Re-place pins based on pinCoords
+            pinCoords.forEach((coord, index) => {
+                placePin(coord.x, coord.y, `pin-${index}`);
+            });
+            // Redraw route lines if more than 1 pin
+            if (pinCoords.length > 1) {
+                drawRouteLines(pinCoords);
+            }
+        }
+
+        // Add event listener to reposition pins and routes on window resize
+        window.addEventListener('resize', () => {
+            repositionPinsAndRoutes();
+            drawDebugOverlay();
+        });
+
+        window.addEventListener('load', () => {
+            repositionPinsAndRoutes();
+            drawDebugOverlay();
+        });
+
         // Modified placePin function to handle class pins with labels
         function placePin(x, y, type) {
+            if (typeof x !== 'number' || isNaN(x) || typeof y !== 'number' || isNaN(y)) {
+                console.warn('Invalid pin coordinates in placePin:', x, y);
+                return;
+            }
             let pin = document.createElement('div');
             pin.className = 'pin-marker';
             if (type === 'start') {
@@ -3144,9 +3272,15 @@
             } else {
                 pin.textContent = '?';
             }
-            pin.style.left = `${x}px`;
-            pin.style.top = `${y}px`;
-            mapElement.appendChild(pin);
+            // Convert to display coordinates for pin placement
+            const disp = toDisplayCoords(x, y);
+            if (typeof disp.x === 'number' && !isNaN(disp.x) && typeof disp.y === 'number' && !isNaN(disp.y)) {
+                pin.style.left = `${disp.x}px`;
+                pin.style.top = `${disp.y}px`;
+                mapElement.appendChild(pin);
+            } else {
+                console.warn('Invalid pin coordinates:', disp.x, disp.y);
+            }
         }
 
         // Calculate route and display results
