@@ -325,9 +325,12 @@
                     <div style="font-size:0.95em; color:#666; margin-top:0.5em;">Or click on the map to add pins in order.</div>
                 </div>
 
-                <!-- Schedule Day dropdown removed -->
+                <div class="form-group">
+                    <label>Pinned Locations</label>
+                    <div id="pinned-locations-container" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+                </div>
 
-                <button id="calculate-route">Calculate Route</button>
+                <button id="calculate-route" style="margin-top: 1rem;">Calculate Route</button>
                 <button id="clear-pins" style="margin-top:1rem;">Clear Pins</button>
             </div>
 
@@ -3037,7 +3040,96 @@
                 pinCoords.push({ x, y });
                 placePin(x, y, `pin-${pinCoords.length - 1}`);
                 pinLocationSelect.value = '';
+                addPinnedLocationDropdown(name, pinCoords.length - 1);
             }
+
+            // Container for multiple pinned location dropdowns
+            const pinnedLocationsContainer = document.getElementById('pinned-locations-container');
+
+            // Add a new dropdown for each pinned location
+            function addPinnedLocationDropdown(name, index) {
+                const container = document.createElement('div');
+                container.style.display = 'flex';
+                container.style.alignItems = 'center';
+                container.style.gap = '0.25rem';
+
+                const removeBtn = document.createElement('button');
+                removeBtn.textContent = '×';
+                removeBtn.title = 'Remove Pin';
+                removeBtn.style.cursor = 'pointer';
+                removeBtn.style.background = 'transparent';
+                removeBtn.style.border = 'none';
+                removeBtn.style.color = 'var(--danger)';
+                removeBtn.style.fontSize = '1.25rem';
+                removeBtn.style.lineHeight = '1';
+                removeBtn.style.padding = '0 0.25rem';
+                removeBtn.style.flexShrink = '0';
+                removeBtn.style.width = '30px';
+                removeBtn.style.marginRight = '0.5rem';
+                removeBtn.style.flexGrow = '0';
+                removeBtn.style.display = 'inline-block';
+
+                const select = document.createElement('select');
+                select.style.flex = '1';
+                select.dataset.pinIndex = index;
+
+                // Populate select with all campus locations
+                for (const key in campusLocations) {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = key;
+                    select.appendChild(option);
+                }
+                console.log('Setting pinned location dropdown value:', name);
+                console.log('Available options:', [...select.options].map(o => o.value));
+                let matchedOption = [...select.options].find(opt => opt.value.toLowerCase().trim() === name.toLowerCase().trim());
+                if (matchedOption) {
+                    select.value = matchedOption.value;
+                } else {
+                    select.selectedIndex = 0;
+                }
+
+                container.appendChild(removeBtn);
+                container.appendChild(select);
+                pinnedLocationsContainer.appendChild(container);
+
+                // Remove pin on remove button click
+                removeBtn.addEventListener('click', () => {
+                    pinCoords.splice(index, 1);
+                    pinnedLocationsContainer.removeChild(container);
+                    repositionPinsAndRoutes();
+                    // Update pinIndex for remaining selects
+                    const selects = pinnedLocationsContainer.querySelectorAll('select');
+                    selects.forEach((sel, i) => {
+                        sel.dataset.pinIndex = i;
+                    });
+                });
+
+                // Update pin location on select change
+                select.addEventListener('change', () => {
+                    const newName = select.value;
+                    const loc = campusLocations[newName];
+                    if (loc) {
+                        pinCoords[index] = { x: loc.pixelX, y: loc.pixelY };
+                        repositionPinsAndRoutes();
+                    }
+                });
+            }
+
+            // Remove dropdown for pinned location
+            function removePinnedLocationDropdown(index) {
+                const selects = pinnedLocationsContainer.querySelectorAll('select');
+                selects.forEach(select => {
+                    if (parseInt(select.dataset.pinIndex) === index) {
+                        pinnedLocationsContainer.removeChild(select);
+                    }
+                });
+            }
+
+            // Removed Edit pin button event as button is removed
+
+            // Remove pin button event
+            // Removed as per new design with X buttons on each dropdown
 
             // Populate Pin Locations dropdown (and remove old function if present)
             function populatePinLocationDropdown() {
