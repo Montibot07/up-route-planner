@@ -1,0 +1,3188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UP Diliman Campus Route Planner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --primary: #8B0000; /* UP Maroon */
+            --secondary: #B22222; /* Darker Red */
+            --light: #f1f5f9;
+            --dark: #1e293b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        .zoom-wrapper {
+            overflow: scroll;
+            width: 100%;
+            height: 600px;
+            position: relative;
+        }
+
+        #map {
+            transform-origin: 0 0;
+            cursor: crosshair;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        .subtitle {
+            color: var(--dark);
+            opacity: 0.8;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+        }
+
+        .control-panel {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            height: fit-content;
+        }
+
+        .panel-title {
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .panel-title i {
+            font-size: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        select,
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        select:focus,
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(139, 0, 0, 0.2);
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: var(--secondary);
+        }
+
+        .map-container {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            height: 900px;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-image: url('https://i.postimg.cc/KzS7YM1v/UP-Diliman-Campus-Map-Brent-Antigua.jpg');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            position: relative;
+        }
+
+        #modal-map {
+            overflow: hidden;
+            position: relative;
+            cursor: crosshair;
+        }
+
+        #modal-map img {
+            transform-origin: 0 0;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .map-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 1rem;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .map-overlay button {
+            width: auto;
+            padding: 0.5rem 1rem;
+        }
+
+        .result-container {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-top: 2rem;
+        }
+
+        .result-title {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .route-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .route-card {
+            background: var(--light);
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+
+        .card-title {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--dark);
+        }
+
+        .card-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .schedule-table th,
+        .schedule-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .schedule-table th {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .schedule-table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        .schedule-table tr:hover {
+            background-color: #f1f5f9;
+        }
+
+        .icon {
+            font-size: 1.5rem;
+        }
+
+        .pin-marker {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-weight: bold;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+            box-shadow: 0 0 0 3px white, 0 0 0 5px var(--primary);
+        }
+
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(139, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+
+            .route-info {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>UP Diliman Campus Route Planner</h1>
+            <p class="subtitle">Navigate the campus efficiently with optimal routes based on your schedule.</p>
+        </header>
+
+        <div class="app-container">
+            <div class="control-panel">
+                <div class="panel-title">
+                    <i class="fas fa-sliders-h"></i>
+                    <span>Route Controls</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="pin-location">Pin Locations</label>
+                    <select id="pin-location">
+                        <option value="">Select a location to pin</option>
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                    <div style="font-size:0.95em; color:#666; margin-top:0.5em;">Or click on the map to add pins in order.</div>
+                </div>
+
+                <!-- Schedule Day dropdown removed -->
+
+                <button id="calculate-route">Calculate Route</button>
+                <button id="clear-pins" style="margin-top:1rem;">Clear Pins</button>
+            </div>
+
+            <div class="map-container">
+                <div id="map" class="loading">
+                    <div class="spinner"></div>
+                </div>
+                <div class="map-overlay" style="display: none;">
+                    <button id="add-pin-location"><i class="fas fa-map-pin"></i> Pin Location</button>
+                </div>
+            </div>
+
+            <!-- Modal for bigger map popup -->
+            <div id="map-modal" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); z-index: 200; justify-content: center; align-items: center; display:none;">
+                <!-- Removed modal content as per user request -->
+            </div>
+        </div>
+
+        <div class="result-container" style="display: none;">
+            <div class="result-title">
+                <i class="fas fa-route"></i>
+                <span>Route Details</span>
+            </div>
+            <div class="route-info">
+                <div class="route-card">
+                    <div class="card-title">Estimated Walking Time</div>
+                    <div class="card-value" id="walk-time">-</div>
+                </div>
+                <div class="route-card">
+                    <div class="card-title">Distance</div>
+                    <div class="card-value" id="distance">-</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 1.5rem;">
+                <div class="card-title">Suggested Route</div>
+                <div id="route-description">No route calculated yet. Select locations and click "Calculate Optimal Route".</div>
+            </div>
+
+            <div style="margin-top: 1.5rem;">
+                <div class="card-title">Your Schedule for <span id="schedule-day-display">Monday</span></div>
+                <table class="schedule-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Class</th>
+                            <th>Location</th>
+                        </tr>
+                    </thead>
+                    <tbody id="schedule-body">
+                        <!-- Filled by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM fully loaded and parsed');
+            const campusLocations = {
+                // ACADEMIC BUILDINGS
+                'ASIAN CENTER / GT-Toyota Asian Cultural Center': { label: 'AC/GT', grid: 'A3', pixelX: 257, pixelY: 151 },
+                'ASIAN INSTITUTE OF TOURISM': { label: 'AIT', grid: 'F1, F2', pixelX: 116, pixelY: 542 },
+                'COLLEGE OF ARCHITECTURE (Bldg. 1)': { label: 'CA1', grid: 'D7', pixelX: 530, pixelY: 386 },
+                'Juguilon Hall': { label: 'CA/JH', grid: 'D6, D7', pixelX: 515, pixelY: 401 },
+                'ARCHAEOLOGICAL STUDIES PROGRAM / Albert Hall': { label: 'ASP/AH', grid: 'E6', pixelX: 476, pixelY: 472 },
+                'Villadolid Hall': { label: 'ASP/VH', grid: 'E6', pixelX: 473, pixelY: 450 },
+                'COLLEGE OF ARTS AND LETTERS': { label: 'CAL', grid: 'D6', pixelX: 466, pixelY: 341 },
+                'Bulwagang Rizal (Faculty Center)': { label: 'FC', grid: 'C5, D5', pixelX: 426, pixelY: 333 },
+                'PALMA HALL': { label: 'PALMA HALL', grid: 'C5', pixelX: 405, pixelY: 280 },
+                'COLLEGE OF FINE ARTS / Bartlett Hall': { label: 'CFA/BaH', grid: 'F6', pixelX: 490, pixelY: 508 },
+                'Corredor': { label: 'Cor', grid: 'F6', pixelX: 503, pixelY: 493 },
+                'Enriquez Hall': { label: 'EH', grid: 'F7', pixelX: 523, pixelY: 519 },
+                'Tolentino Hall': { label: 'TH', grid: 'F7', pixelX: 518, pixelY: 489 },
+                'COLLEGE OF HOME ECONOMICS / Alonso Hall': { label: 'CHE/AlH', grid: 'A6, B6', pixelX: 447, pixelY: 176 },
+                'Child Development Center / Home Management House' :{ label: 'CHE/AlH', grid: 'A6, B6', pixelX: 721, pixelY: 315 },
+                'Craft and Design Laboratory': { label: 'CDL', grid: 'B6', pixelX: 454, pixelY: 227 },
+                'Gusali 2': { label: 'Gus2', grid: 'B6', pixelX: 466, pixelY: 211 },
+                'COLLEGE OF HUMAN KINETICS / Ylanan Hall (University Gymnasium)': { label: 'CHK/GYM', grid: 'E2, E3, F2, F3', pixelX: 220, pixelY: 482 },
+                'Gym Annex (Basketball Court)': { label: 'BC', grid: 'E2', pixelX: 179, pixelY: 473 },
+                'CENTER FOR INTERNATIONAL STUDIES / Benton Hall': { label: 'BH', grid: 'B5', pixelX: 404, pixelY: 255 },
+                'COLLEGE OF MASS COMMUNICATION / Plaridel Hall': { label: 'CMC/PlH', grid: 'E4', pixelX: 308, pixelY: 416 },
+                'CMC Media Center and DZUP Station': { label: 'MC/DZUP', grid: 'E4',  pixelX: 311, pixelY: 451 },
+                'Plaridel Hall Annex': { label: 'PlHA', grid: 'E4', pixelX: 289, pixelY: 426 },
+                'University Film Institute': { label: 'UFI', grid: 'D3, D4', pixelX: 275, pixelY: 340 },
+                'COLLEGE OF MUSIC / Abelardo Hall': { label: 'CMu/AbH', grid: 'D4', pixelX: 301, pixelY: 393 },
+                'Annex (CMuA)': { label: 'CMuA', grid: 'D3', pixelX: 275, pixelY: 396 },
+                'Center for Ethnomusicology': { label: 'CMu/AbH', grid: 'D4', pixelX: 300, pixelY: 402 },
+                'Dance Studio': { label: 'DS', grid: 'E3', pixelX: 275, pixelY: 417 },
+                'COLLEGE OF SCIENCE (Administration Bldg.)': { label: 'College of Science', grid: 'C7', pixelX: 564, pixelY: 273 },
+                'Institute of Biology': { label: 'IB', grid: 'C6, C7', pixelX: 510, pixelY: 267 },
+                'Zoology Building': { label: 'ZB', grid: 'B5, B6', pixelX: 510, pixelY: 267 },
+                'Institute of Chemistry': { label: 'IC', grid: 'A6, A7, B6, B7', pixelX: 516, pixelY: 175 },
+                'Institute of Chemistry - Research': { label: 'IC-R', grid: 'A6, B6', pixelX: 485, pixelY: 177 },
+                'Computational Science Research Center': { label: 'CSRC', grid: 'B7', pixelX: 558, pixelY: 247 },
+                'Institute of Environmental Science and Meteorology': { label: 'IESM', grid: 'B8, C8', pixelX: 651, pixelY: 255 },
+                'National Institute of Geological Sciences': { label: 'NIGS', grid: 'C8, C9', pixelX: 666, pixelY: 277 },
+                'CS Library': { label: 'CSL', grid: 'C7, C8', pixelX: 590, pixelY: 290 },
+                'Institute of Mathematics / Bldg. 1': { label: 'IM1', grid: 'B8', pixelX: 630, pixelY: 243 },
+                'Institute of Mathematics / Bldg. 2': { label: 'IM2', grid: 'B8', pixelX: 634, pixelY: 217 },
+                'The Marine Science Institute': { label: 'MSI', grid: 'C7', pixelX: 526, pixelY: 301 },
+                'National Institute of Molecular Biology and Biotechnology': { label: 'NIMBB', grid: 'B6', pixelX: 506, pixelY: 237 },
+                'National Institute of Physics': { label: 'National Institute of Physics', grid: 'A7, A8, B7, B8', pixelX: 594, pixelY: 175},
+                'Natural Sciences Research Institute / Miranda Hall': { label: 'NSRI', grid: 'C6', pixelX: 470, pixelY: 296 },
+                'COLLEGE OF SOCIAL SCIENCES AND PHILOSOPHY / Palma Hall': { label: 'Palma Hall', grid: 'C5, C6', pixelX: 403, pixelY: 280 },
+                'Benton Hall (CSSP)': { label: 'BH', grid: 'B5', pixelX: 403, pixelY: 254 },
+                'Department of Psychology / Lagmay Hall (Palma Hall Annex)': { label: 'LH', grid: 'B5', pixelX: 400, pixelY: 236 },
+                'Faculty Center (CSSP)': { label: 'CSSP-FC', grid: 'B5', pixelX: 421, pixelY: 233 },
+                'COLLEGE OF SOCIAL WORK AND COMMUNITY DEVELOPMENT / Tandang Sora Hall': { label: 'CSWCD/TSH', grid: 'E3, E4', pixelX: 264, pixelY: 451 },
+                'SCHOOL OF ECONOMICS / Philippine Center for Economic Development': { label: 'SE', grid: 'B4', pixelX: 296, pixelY: 184 },
+                'Encarnacion Hall': { label: 'EnH', grid: 'A4', pixelX: 295, pixelY: 165 },
+                'COLLEGE OF EDUCATION / Benitez Hall': { label: 'Benitez Hall', grid: 'B5, B6', pixelX: 405, pixelY: 218 },
+                'National Institute of Science and Mathematics Education Development / Vidal Tan Hall': { label: 'NISMED', grid: 'C6, D6', pixelX: 471, pixelY: 314 },
+                'Science Teachers Training Center': { label: 'STC', grid: 'D6, D7', pixelX: 518, pixelY: 339 },
+                'UP Integrated School / 3-10': { label: 'UPIS2', grid: 'A5, B5', pixelX: 416, pixelY: 184 },
+                'UP Integrated School K-2': { label: 'UPIS1', grid: 'B6', pixelX: 448, pixelY: 206 },
+                'COLLEGE OF ENGINEERING / Melchor Hall': { label: 'Melchor Hall', grid: 'C3, C4', pixelX: 294, pixelY: 299 },
+                'Institute of Chemical Engineering': { label: 'IChE', grid: 'C8, C9, D8, D9', pixelX: 669, pixelY: 329 },
+                'Institute of Civil Engineering Bldg. 1': { label: 'ICE1', grid: 'D8', pixelX: 623, pixelY: 353 },
+                'ICE Bldg. 2': { label: 'ICE2', grid: 'D8', pixelX: 645, pixelY: 378 },
+                'ICE Bldg. 3': { label: 'ICE3', grid: 'D8, D9', pixelX: 666, pixelY: 383 },
+                'ICE Bldg. 4': { label: 'ICE4', grid: 'D8, D9, E8, E9', pixelX: 668, pixelY: 402 },
+                'Department of Computer Science (UP Alumni Engineers Centennial Hall)': { label: 'AECH', grid: 'C8', pixelX: 629, pixelY: 309 },
+                'Electrical and Electronics Engineering Institute Bldg. 1': { label: 'EEE1', grid: 'C7', pixelX: 578, pixelY: 318 },
+                'Electrical and Electronics Engineering Institute Bldg. 2': { label: 'EEE2', grid: 'C8', pixelX: 600, pixelY: 318 },
+                'Environmental and Energy Engineering Program': { label: 'EEEP', grid: 'D8', pixelX: 621, pixelY: 393 },
+                'Department of Geodetic Engineering': { label: 'Melchor Hall', grid: 'C3, C4', pixelX: 286, pixelY: 295 },
+                'Department of Industrial Engineering and Operations Research': { label: 'Melchor Hall', grid: 'C3, C4', pixelX: 278, pixelY: 298 },
+                'Industrial Engineering – Mechanical Engineering Building / German Yia Hall': { label: 'GYH', grid: 'B3, C3', pixelX: 261, pixelY: 253 },
+                'Department of Mechanical Engineering': { label: 'Melchor Hall', grid: 'C3, C4', pixelX: 278, pixelY: 291},
+                'Department of Mining, Metallurgical and Materials Engineering': { label: 'MMM', grid: 'C8, C9', pixelX: 666, pixelY: 309 },
+                'National Center for Transportation Studies': { label: 'NCTS', grid: 'C3, C4', pixelX: 270, pixelY: 273 },
+                'National Engineering Center / Juinio Hall': { label: 'NEC', grid: 'B3, B4, C3, C4', pixelX: 286, pixelY: 251 },
+                'UP Alumni Engineers Centennial Hall (Engineering Library 2)': { label: 'AECH', grid: 'C8', pixelX: 631, pixelY: 307 },
+                'INSTITUTE OF ISLAMIC STUDIES / Romulo Hall': { label: 'IIS/RH', grid: 'B3', pixelX: 258, pixelY: 193 },
+                'COLLEGE OF LAW / Malcolm Hall': { label: 'Malcolm Hall', grid: 'B3, B4', pixelX: 283, pixelY: 223 },
+                'Law Annex / Espiritu Hall': { label: 'EsH', grid: 'B3', pixelX: 261, pixelY: 218 },
+                'Law Center / Bocobo Hall': { label: 'LC/BoH', grid: 'B3', pixelX: 253, pixelY: 216 },
+                'Law Forum': { label: 'LF', grid: 'B3', pixelX: 270, pixelY: 208 },
+                'NATIONAL COLLEGE OF PUBLIC ADMINISTRATION AND GOVERNANCE': { label: 'NCPAG', grid: 'F4, G4', pixelX: 327, pixelY: 559 },
+                'SCHOOL OF LIBRARY AND INFORMATION STUDIES': { label: 'Gonzalez Hall', grid: 'B4, B5', pixelX: 349, pixelY: 237 },
+                'SCHOOL OF LABOR AND INDUSTRIAL RELATIONS / Bonifacio Hall': { label: 'SOLAIR/BonH', grid: 'F3, F4', pixelX: 281, pixelY: 497 },
+                'SCHOOL OF STATISTICS (New building)': { label: 'STAT2', grid: 'D7', pixelX: 500, pixelY: 650 },
+                'SCHOOL OF STATISTICS (Old building)': { label: 'STAT1', grid: 'B3, C3', pixelX: 200, pixelY: 270 },
+                'SCHOOL OF URBAN AND REGIONAL PLANNING': { label: 'SURP', grid: 'E3, E4', pixelX: 600, pixelY: 320 },
+                'TECHNOLOGY MANAGEMENT CENTER / Advanced Science and Technology Institute': { label: 'ASTI', grid: 'B9', pixelX: 200, pixelY: 800 },
+                'CESAR E.A. VIRATA SCHOOL OF BUSINESS': { label: 'VSB', grid: 'A4, B4', pixelX: 100, pixelY: 380 },
+                'UNIVERSITY LIBRARY / Gonzalez Hall': { label: 'Gonzalez Hall', grid: 'B4, B5', pixelX: 200, pixelY: 390 },
+                'Bulwagan ng Dangal': { label: 'Gonzalez Hall', grid: 'B4, B5', pixelX: 200, pixelY: 400 },
+                'Lim Museum': { label: 'LM', grid: 'D6', pixelX: 500, pixelY: 510 },
+                'Vargas Museum': { label: 'VM', grid: 'D5, D6', pixelX: 500, pixelY: 480 },
+                'Institute of Small Scale Industries / Virata Hall': { label: 'ISSI', grid: 'F4', pixelX: 700, pixelY: 380 },
+
+                // ADMINISTRATION AND SUPPORT
+                'QUEZON HALL (Administration Building)': { label: 'Quezon Hall', grid: 'D4, D5', pixelX: 500, pixelY: 400 },
+                'OFFICE OF THE CHANCELLOR': { label: 'Quezon Hall', grid: 'D4, D5', pixelX: 500, pixelY: 410 },
+                'Balay Internasyonal': { label: 'BInt', grid: 'B1', pixelX: 200, pixelY: 50 },
+                'Diliman Gender Office': { label: 'BH', grid: 'B5', pixelX: 200, pixelY: 410 },
+                'Diliman Information Office': { label: 'University Theater', grid: 'D3, D4', pixelX: 500, pixelY: 360 },
+                'Diliman Legal Office': { label: 'Quezon Hall', grid: 'D4, D5', pixelX: 500, pixelY: 420 },
+                'Office for Initiatives in Culture and the Arts': { label: 'University Theater', grid: 'D3, D4', pixelX: 500, pixelY: 370 },
+                'Office of Anti-Sexual Harassment': { label: 'BH', grid: 'B5', pixelX: 200, pixelY: 430 },
+                'Sentro ng Wikang Filipino': { label: 'SURP', grid: 'E3, E4', pixelX: 600, pixelY: 330 },
+                'University Computer Center': { label: 'UCC', grid: 'C3', pixelX: 400, pixelY: 250 },
+                'University Theater': { label: 'University Theater', grid: 'D3, D4', pixelX: 500, pixelY: 380 },
+                'OFFICE OF THE VICE CHANCELLOR FOR ACADEMIC AFFAIRS / Interactive Learning Center Diliman': { label: 'OVCAA/ILCD', grid: 'C3', pixelX: 400, pixelY: 260 },
+                'Office for the Advancement of Teaching': { label: 'ILCD', grid: 'C3', pixelX: 400, pixelY: 270 },
+                'Interactive Learning Center Diliman': { label: 'ILCD', grid: 'C3', pixelX: 400, pixelY: 280 },
+                'General Education Center': { label: 'ILCD', grid: 'C3', pixelX: 400, pixelY: 290 },
+                'National Service Training Program': { label: 'ILCD', grid: 'C3', pixelX: 400, pixelY: 300 },
+                'Office of Field Activities': { label: 'ILCD', grid: 'C3', pixelX: 400, pixelY: 310 },
+                'Office of International Linkages Diliman': { label: 'ILCD', grid: 'C3', pixelX: 400, pixelY: 320 },
+                'Office of the University Registrar': { label: 'Office of the University Registrar', grid: 'D6, D7', pixelX: 500, pixelY: 590 },
+                'OFFICE OF THE VICE CHANCELLOR FOR ADMINISTRATION': { label: 'Quezon Hall', grid: 'D4, D5', pixelX: 500, pixelY: 430 },
+                'Accounting, Budget and Cash Office Building': { label: 'ABC', grid: 'C2', pixelX: 400, pixelY: 150 },
+                'Business Concessions Office, Community Affairs Complex': { label: 'CAC', grid: 'F6, G6', pixelX: 700, pixelY: 550 },
+                'Human Resources Development Office': { label: 'Quezon Hall', grid: 'D4, D5', pixelX: 500, pixelY: 440 },
+                'Procurement Service': { label: 'PS', grid: 'C3', pixelX: 400, pixelY: 200 },
+                'Supply and Property Management Office': { label: 'SPMO', grid: 'E6', pixelX: 600, pixelY: 580 },
+                'Utilities Management Team': { label: 'UCC', grid: 'C3', pixelX: 400, pixelY: 210 },
+                'OFFICE OF THE VICE CHANCELLOR FOR COMMUNITY AFFAIRS': { label: 'Quezon Hall', grid: 'D4, D5', pixelX: 500, pixelY: 450 },
+                'Campus Maintenance Office': { label: 'CAC', grid: 'F6, G6', pixelX: 700, pixelY: 560 },
+                'Housing Office': { label: 'CAC', grid: 'F6, G6', pixelX: 700, pixelY: 570 },
+                'Office of Community Relations': { label: 'CAC', grid: 'F6, G6', pixelX: 700, pixelY: 580 },
+                'Office of the Campus Architect': { label: 'OCA', grid: 'E6', pixelX: 600, pixelY: 590 },
+                'Office of the Chief Security Officer': { label: 'SOLAIR/BonH', grid: 'F3, F4', pixelX: 700, pixelY: 310 },
+                'University Health Service': { label: 'UHS', grid: 'B2, C2', pixelX: 200, pixelY: 150 },
+                'UP Diliman Police': { label: 'UPDP', grid: 'D6', pixelX: 500, pixelY: 530 },
+                'OFFICE OF THE VICE CHANCELLOR FOR RESEARCH AND DEVELOPMENT': { label: 'PHIVOLCS', grid: 'G6, G7', pixelX: 800, pixelY: 550 },
+                'Office of Extension Coordination': { label: 'PHIVOLCS', grid: 'G6, G7', pixelX: 800, pixelY: 560 },
+                'OFFICE OF THE VICE CHANCELLOR FOR STUDENT AFFAIRS': { label: 'Quezon Hall', grid: 'D4, D5', pixelX: 500, pixelY: 460 },
+                'Office of Counseling and Guidance, Vinzons Hall': { label: 'Vinzons Hall', grid: 'A5', pixelX: 100, pixelY: 450 },
+                'Diliman Learning Resource Center, Kamia Residence Hall': { label: 'KRH', grid: 'C6', pixelX: 400, pixelY: 540 },
+                'Office of Scholarships and Students Services': { label: 'Vinzons Hall', grid: 'A5', pixelX: 100, pixelY: 460 },
+                'Office of Student Activities': { label: 'Vinzons Hall', grid: 'A5', pixelX: 100, pixelY: 470 },
+                'Office of Student Housing, Acacia Residence Hall': { label: 'ARH', grid: 'C2', pixelX: 400, pixelY: 160 },
+                'Student Disciplinary Tribunal': { label: 'Vinzons Hall', grid: 'A5', pixelX: 100, pixelY: 480 },
+                'University Food Service': { label: 'Vinzons Hall', grid: 'A5', pixelX: 100, pixelY: 490 },
+                'Department of Military Science and Tactics': { label: 'DMST', grid: 'E3', pixelX: 600, pixelY: 250 },
+                'University Center for Women’s Studies': { label: 'CWS', grid: 'E3', pixelX: 600, pixelY: 260 },
+                'UP Press': { label: 'UPP', grid: 'D6, E6', pixelX: 500, pixelY: 540 },
+                'UP Vanguard': { label: 'UPVan', grid: 'E3', pixelX: 600, pixelY: 270 },
+
+                // DORMITORIES
+                'Acacia Residence Hall': { label: 'ARH', grid: 'C2', pixelX: 400, pixelY: 170 },
+                'Concordia Albarracin Hall': { label: 'CAH', grid: 'E9', pixelX: 600, pixelY: 800 },
+                'Ilang-ilang Residence Hall': { label: 'IlRH', grid: 'A2, B2', pixelX: 100, pixelY: 100 },
+                'International Center': { label: 'International Center', grid: 'B2, B3', pixelX: 200, pixelY: 100 },
+                'Ipil Residence Hall': { label: 'IpRH', grid: 'C3', pixelX: 400, pixelY: 220 },
+                'Kalayaan Residence Hall': { label: 'Kalayaan Residence Hall', grid: 'C2, C3', pixelX: 400, pixelY: 180 },
+                'Kamagong Residence Hall': { label: 'KmgRH', grid: 'E9', pixelX: 600, pixelY: 820 },
+                'Kamia Residence Hall': { label: 'KRH', grid: 'C6', pixelX: 400, pixelY: 560 },
+                'Molave Residence Hall': { label: 'MRH', grid: 'C3, D3', pixelX: 400, pixelY: 230 },
+                'Sampaguita Residence Hall': { label: 'SaRH', grid: 'B6, C6', pixelX: 200, pixelY: 560 },
+                'Sanggumay Residence Hall': { label: 'SgmRH', grid: 'C2, D2', pixelX: 400, pixelY: 190 },
+                'UP Centennial Residence Hall': { label: 'CRH', grid: 'E9', pixelX: 600, pixelY: 840 },
+                'Yakal Residence Hall': { label: 'YRH', grid: 'C3', pixelX: 400, pixelY: 240 },
+
+                // OTHERS
+                'All UP Workers Union': { label: 'WU', grid: 'C2', pixelX: 400, pixelY: 100 },
+                'Andres Bonifacio Centennial Carillon Tower and Plaza': { label: 'Carillon Tower', grid: 'D4', pixelX: 500, pixelY: 390 },
+                'Ang Bahay ng Alumni': { label: 'Ang Bahay ng Alumni', grid: 'D3', pixelX: 500, pixelY: 340 },
+                'Area 1 Residential Community': { label: 'Area 1', grid: 'A1, B1, C1', pixelX: 100, pixelY: 50 },
+                'Area 2 Residential Community': { label: 'Area 2', grid: 'C1, C2, D1, D2', pixelX: 400, pixelY: 50 },
+                'Athletes’ Quarters': { label: 'AQ', grid: 'D2', pixelX: 500, pixelY: 150 },
+                'Automated Guideway Transit System Experimental Track': { label: 'AGT', grid: 'F6, G5, G6', pixelX: 700, pixelY: 560 },
+                'Balay Tsanselor': { label: 'BTs', grid: 'C9', pixelX: 400, pixelY: 820 },
+                'Church of the Risen Lord': { label: 'Church of the Risen Lord', grid: 'B2', pixelX: 200, pixelY: 120 },
+                'Citimall and L’Paseo': { label: 'CIT', grid: 'I6', pixelX: 1000, pixelY: 550 },
+                'Commission on Higher Education': { label: 'CHED', grid: 'G6', pixelX: 800, pixelY: 570 },
+                'Commission on Human Rights': { label: 'CHR', grid: 'F4, G4', pixelX: 700, pixelY: 360 },
+                'Development Bank of the Philippines': { label: 'DBP', grid: 'I5', pixelX: 1000, pixelY: 450 },
+                'DZUP Tower': { label: 'DZUP', grid: 'E7', pixelX: 600, pixelY: 600 },
+                'Executive House': { label: 'ExH', grid: 'D8', pixelX: 500, pixelY: 780 },
+                'Fonacier Hall, Alumni Center': { label: 'FH', grid: 'D3', pixelX: 500, pixelY: 330 },
+                'Grandstand': { label: 'GS', grid: 'B4', pixelX: 200, pixelY: 360 },
+                'Hardin ng Doña Aurora Housing': { label: 'HDA', grid: 'E8, F8', pixelX: 600, pixelY: 750 },
+                'Balay Kalinaw / Ikeda Hall': { label: 'BKal', grid: 'B1, B2', pixelX: 200, pixelY: 70 },
+                'Kalinga Day Care Center': { label: 'KDCC', grid: 'B1', pixelX: 200, pixelY: 60 },
+                'Land Bank of the Philippines': { label: 'ABC', grid: 'C2', pixelX: 400, pixelY: 110 },
+                'National Computer Center': { label: 'NCC', grid: 'G6', pixelX: 800, pixelY: 580 },
+                'National Science Complex Amphitheater': { label: 'National Science Complex Amphitheater', grid: 'B7', pixelX: 200, pixelY: 650 },
+                'Oblation Plaza': { label: 'Oblation', grid: 'D5, E5', pixelX: 500, pixelY: 470 },
+                'PAGASA Astronomical Observatory': { label: 'PAGASA Astronomical Observatory', grid: 'B6', pixelX: 200, pixelY: 580 },
+                'Parish of the Holy Sacrifice': { label: 'Parish of the Holy Sacrifice', grid: 'B2, C2', pixelX: 200, pixelY: 130 },
+                'Catholic Parish Office': { label: 'CPO', grid: 'B3, C3', pixelX: 200, pixelY: 200 },
+                'Philippine Association of University Women (PAUW) Annex': { label: 'PAUW-A', grid: 'A1, A2', pixelX: 100, pixelY: 70 },
+                'PAUW Day Care Center': { label: 'PAUW-DC', grid: 'D7', pixelX: 500, pixelY: 660 },
+                'Philippine Institute of Volcanology and Seismology': { label: 'PHIVOLCS', grid: 'G6, G7', pixelX: 800, pixelY: 590 },
+                'Philippine National Bank': { label: 'ABC', grid: 'C2', pixelX: 400, pixelY: 120 },
+                'Philippine National Red Cross': { label: 'PNRC', grid: 'G7', pixelX: 800, pixelY: 600 },
+                'Philippine Social Science Center': { label: 'PSSC', grid: 'F1, F2', pixelX: 700, pixelY: 100 },
+                'Post Office': { label: 'PO', grid: 'C2', pixelX: 400, pixelY: 130 },
+                'Provident Fund': { label: 'PF', grid: 'C2', pixelX: 400, pixelY: 140 },
+                'Shopping Center': { label: 'SC', grid: 'C2', pixelX: 400, pixelY: 150 },
+                'State Auditing and Accounting': { label: 'SAA', grid: 'F3, F4', pixelX: 700, pixelY: 320 },
+                'Sunken Garden (Gen. Antonio Luna Parade Grounds)': { label: 'Sunken Garden', grid: 'B4, B5', pixelX: 200, pixelY: 400 },
+                'Tennis Courts': { label: 'TC', grid: 'C4, D4', pixelX: 400, pixelY: 350 },
+                'Track and Field Oval': { label: 'TFO', grid: 'D1, D2', pixelX: 500, pixelY: 100 },
+                'University Amphitheater': { label: 'UA', grid: 'D4, D5', pixelX: 500, pixelY: 400 },
+                'University Hotel': { label: 'UH', grid: 'B1', pixelX: 200, pixelY: 80 },
+                'University Swimming Pool': { label: 'SP', grid: 'B2', pixelX: 200, pixelY: 140 },
+                'UP Consumers Cooperative Grocery': { label: 'Coop', grid: 'C2', pixelX: 400, pixelY: 160 },
+                'Beta Theatrum': { label: 'BT', grid: 'D5', pixelX: 500, pixelY: 490 },
+                'UP Town Center': { label: 'UPTC', grid: 'A6, A7, A8', pixelX: 100, pixelY: 600 },
+                'UP Wet and Dry Market': { label: 'W&DM', grid: 'I5', pixelX: 1000, pixelY: 480 },
+                'UP-Ayala Foundation Technology Business Incubator': { label: 'TBI', grid: 'A8, B8', pixelX: 100, pixelY: 700 },
+                'UP-Ayala Technohub': { label: 'THB', grid: 'G2, G3, H2, H3, H4, I3, I4', pixelX: 800, pixelY: 200 },
+                'UP Veterinary Teaching Hospital': { label: 'UPVTH', grid: 'F7', pixelX: 700, pixelY: 650 },
+                'Village A Residential Community': { label: 'VILLAGE A', grid: 'E8, E9', pixelX: 600, pixelY: 780 },
+                'Village B Residential Community': { label: 'VILLAGE B', grid: 'E7, E8', pixelX: 600, pixelY: 700 },
+                'Washington Sycip Garden of Native Trees': { label: 'WSGNT', grid: 'D3, D4', pixelX: 500, pixelY: 350 },
+            };
+        // Sample class schedule data (using actual building names)
+        const classSchedules = {
+                monday: [
+                    { time: '8:00 AM - 9:15 AM', class: 'CS 101', location: 'COLLEGE OF ENGINEERING / Melchor Hall' },
+                    { time: '9:30 AM - 10:45 AM', class: 'Math 205', location: 'COLLEGE OF SCIENCE (Administration Bldg.)' },
+                    { time: '11:00 AM - 12:15 PM', class: 'Physics 110', location: 'National Institute of Physics' },
+                    { time: '1:30 PM - 2:45 PM', class: 'Lit 101', location: 'COLLEGE OF ARTS AND LETTERS' }
+                ],
+                tuesday: [
+                    { time: '9:00 AM - 10:15 AM', class: 'Hist 101', location: 'COLLEGE OF SOCIAL SCIENCES AND PHILOSOPHY / Palma Hall' },
+                    { time: '10:30 AM - 11:45 AM', class: 'Chem 201', location: 'Institute of Chemistry' },
+                    { time: '1:00 PM - 2:15 PM', class: 'Econ 101', location: 'SCHOOL OF ECONOMICS / Philippine Center for Economic Development' }
+                ],
+                wednesday: [
+                    { time: '8:00 AM - 9:15 AM', class: 'CS 101', location: 'COLLEGE OF ENGINEERING / Melchor Hall' },
+                    { time: '9:30 AM - 10:45 AM', class: 'Math 205', location: 'COLLEGE OF SCIENCE (Administration Bldg.)' },
+                    { time: '11:00 AM - 12:15 PM', class: 'Physics 110', location: 'National Institute of Physics' },
+                    { time: '1:30 PM - 2:45 PM', class: 'Lit 101', location: 'COLLEGE OF ARTS AND LETTERS' }
+                ],
+                thursday: [
+                    { time: '9:00 AM - 10:15 AM', class: 'Hist 101', location: 'COLLEGE OF SOCIAL SCIENCES AND PHILOSOPHY / Palma Hall' },
+                    { time: '10:30 AM - 11:45 AM', class: 'Chem 201', location: 'Institute of Chemistry' },
+                    { time: '1:00 PM - 2:15 PM', class: 'Econ 101', location: 'SCHOOL OF ECONOMICS / Philippine Center for Economic Development' }
+                ],
+                friday: [
+                    { time: '8:00 AM - 9:15 AM', class: 'CS Lab', location: 'Department of Computer Science (UP Alumni Engineers Centennial Hall)' },
+                    { time: '10:00 AM - 11:15 AM', class: 'Math Disc.', location: 'Institute of Mathematics / Bldg. 1' }
+                ]
+            };
+
+            const startLocationSelect = document.getElementById('start-location');
+            const endLocationSelect = document.getElementById('end-location');
+            const mapElement = document.getElementById('map');
+            const mapOverlay = document.querySelector('.map-overlay');
+            const calculateButton = document.getElementById('calculate-route');
+            const resultContainer = document.querySelector('.result-container');
+            const walkTimeElement = document.getElementById('walk-time');
+            const distanceElement = document.getElementById('distance');
+            const routeDescriptionElement = document.getElementById('route-description');
+            // const scheduleDaySelect = document.getElementById('schedule-day');
+            // const scheduleDayDisplay = document.getElementById('schedule-day-display');
+            // const scheduleBody = document.getElementById('schedule-body');
+
+            let startPin = null;
+            let endPin = null;
+            let currentPinningMode = null; // 'start' or 'end'
+
+            // --- LINEMAP INTEGRATION ---
+            // Paste your linemap JSON here or load it via fetch if running a server
+            const linemapData = {
+    "description": "",
+    "tags": [],
+    "size": {
+        "height": 736,
+        "width": 736
+    },
+    "objects": [
+        {
+            "id": 1707673468,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T13:56:14.496Z",
+            "updatedAt": "2025-07-20T13:58:24.232Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        210,
+                        81
+                    ],
+                    [
+                        227,
+                        330
+                    ],
+                    [
+                        223,
+                        406
+                    ],
+                    [
+                        347,
+                        401
+                    ],
+                    [
+                        341,
+                        343
+                    ],
+                    [
+                        291,
+                        328
+                    ],
+                    [
+                        169,
+                        332
+                    ],
+                    [
+                        171,
+                        367
+                    ],
+                    [
+                        223,
+                        407
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707673820,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T13:58:58.064Z",
+            "updatedAt": "2025-07-20T13:59:02.204Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        106,
+                        347
+                    ],
+                    [
+                        108,
+                        339
+                    ],
+                    [
+                        118,
+                        333
+                    ],
+                    [
+                        168,
+                        332
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707673848,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T13:59:11.035Z",
+            "updatedAt": "2025-07-20T13:59:11.035Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        223,
+                        406
+                    ],
+                    [
+                        236,
+                        477
+                    ],
+                    [
+                        226,
+                        491
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707674023,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:00:34.509Z",
+            "updatedAt": "2025-07-20T14:00:39.471Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        103,
+                        48
+                    ],
+                    [
+                        104,
+                        120
+                    ],
+                    [
+                        268,
+                        119
+                    ],
+                    [
+                        287,
+                        327
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707674045,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:00:43.722Z",
+            "updatedAt": "2025-07-20T14:00:48.235Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        78,
+                        232
+                    ],
+                    [
+                        78,
+                        189
+                    ],
+                    [
+                        135,
+                        188
+                    ],
+                    [
+                        135,
+                        122
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707674062,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:00:51.996Z",
+            "updatedAt": "2025-07-20T14:00:51.996Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        135,
+                        187
+                    ],
+                    [
+                        217,
+                        181
+                    ],
+                    [
+                        273,
+                        180
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707674380,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:03:24.762Z",
+            "updatedAt": "2025-07-20T14:03:29.431Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        102,
+                        121
+                    ],
+                    [
+                        96,
+                        122
+                    ],
+                    [
+                        71,
+                        131
+                    ],
+                    [
+                        43,
+                        139
+                    ],
+                    [
+                        29,
+                        139
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707674405,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:03:36.209Z",
+            "updatedAt": "2025-07-20T14:04:08.650Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        21,
+                        95
+                    ],
+                    [
+                        28,
+                        111
+                    ],
+                    [
+                        36,
+                        146
+                    ],
+                    [
+                        47,
+                        173
+                    ],
+                    [
+                        48,
+                        180
+                    ],
+                    [
+                        49,
+                        221
+                    ],
+                    [
+                        78,
+                        232
+                    ],
+                    [
+                        371,
+                        226
+                    ],
+                    [
+                        383,
+                        324
+                    ],
+                    [
+                        343,
+                        342
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707674492,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:04:18.418Z",
+            "updatedAt": "2025-07-20T14:04:38.586Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        383,
+                        323
+                    ],
+                    [
+                        422,
+                        308
+                    ],
+                    [
+                        459,
+                        269
+                    ],
+                    [
+                        437,
+                        252
+                    ],
+                    [
+                        429,
+                        239
+                    ],
+                    [
+                        426,
+                        230
+                    ],
+                    [
+                        403,
+                        70
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707674548,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:04:44.712Z",
+            "updatedAt": "2025-07-20T14:04:47.882Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        272,
+                        170
+                    ],
+                    [
+                        362,
+                        168
+                    ],
+                    [
+                        364,
+                        177
+                    ],
+                    [
+                        416,
+                        177
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707674571,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:04:55.514Z",
+            "updatedAt": "2025-07-20T14:06:15.430Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        361,
+                        167
+                    ],
+                    [
+                        358,
+                        118
+                    ],
+                    [
+                        434,
+                        119
+                    ],
+                    [
+                        474,
+                        166
+                    ],
+                    [
+                        500,
+                        167
+                    ],
+                    [
+                        511,
+                        192
+                    ],
+                    [
+                        521,
+                        199
+                    ],
+                    [
+                        531,
+                        202
+                    ],
+                    [
+                        537,
+                        207
+                    ],
+                    [
+                        542,
+                        230
+                    ],
+                    [
+                        555,
+                        228
+                    ],
+                    [
+                        602,
+                        217
+                    ],
+                    [
+                        616,
+                        214
+                    ],
+                    [
+                        646,
+                        213
+                    ],
+                    [
+                        667,
+                        213
+                    ],
+                    [
+                        654,
+                        269
+                    ],
+                    [
+                        656,
+                        287
+                    ],
+                    [
+                        677,
+                        316
+                    ],
+                    [
+                        685,
+                        335
+                    ],
+                    [
+                        681,
+                        337
+                    ],
+                    [
+                        428,
+                        343
+                    ],
+                    [
+                        424,
+                        306
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707674783,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:06:19.515Z",
+            "updatedAt": "2025-07-20T14:06:31.213Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        424,
+                        307
+                    ],
+                    [
+                        431,
+                        312
+                    ],
+                    [
+                        446,
+                        316
+                    ],
+                    [
+                        463,
+                        318
+                    ],
+                    [
+                        473,
+                        316
+                    ],
+                    [
+                        514,
+                        279
+                    ],
+                    [
+                        509,
+                        277
+                    ],
+                    [
+                        459,
+                        269
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707674821,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:06:34.857Z",
+            "updatedAt": "2025-07-20T14:06:42.468Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        514,
+                        278
+                    ],
+                    [
+                        528,
+                        281
+                    ],
+                    [
+                        554,
+                        289
+                    ],
+                    [
+                        570,
+                        291
+                    ],
+                    [
+                        645,
+                        289
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707674842,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:06:43.307Z",
+            "updatedAt": "2025-07-20T14:06:47.495Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        588,
+                        289
+                    ],
+                    [
+                        583,
+                        266
+                    ],
+                    [
+                        584,
+                        262
+                    ],
+                    [
+                        588,
+                        248
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707674862,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:06:52.374Z",
+            "updatedAt": "2025-07-20T14:07:05.049Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        541,
+                        230
+                    ],
+                    [
+                        529,
+                        234
+                    ],
+                    [
+                        491,
+                        231
+                    ],
+                    [
+                        443,
+                        225
+                    ],
+                    [
+                        425,
+                        225
+                    ],
+                    [
+                        370,
+                        226
+                    ],
+                    [
+                        365,
+                        178
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707674904,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:07:10.864Z",
+            "updatedAt": "2025-07-20T14:07:10.864Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        367,
+                        201
+                    ],
+                    [
+                        276,
+                        203
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675024,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:08:05.719Z",
+            "updatedAt": "2025-07-20T14:08:05.719Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        254,
+                        79
+                    ],
+                    [
+                        257,
+                        119
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675033,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:08:09.247Z",
+            "updatedAt": "2025-07-20T14:08:14.724Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        268,
+                        118
+                    ],
+                    [
+                        276,
+                        111
+                    ],
+                    [
+                        344,
+                        110
+                    ],
+                    [
+                        353,
+                        112
+                    ],
+                    [
+                        358,
+                        117
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675078,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:08:27.814Z",
+            "updatedAt": "2025-07-20T14:08:27.814Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        368,
+                        117
+                    ],
+                    [
+                        363,
+                        64
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675089,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:08:34.229Z",
+            "updatedAt": "2025-07-20T14:08:34.229Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        318,
+                        110
+                    ],
+                    [
+                        314,
+                        72
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675111,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:08:44.280Z",
+            "updatedAt": "2025-07-20T14:08:44.280Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        346,
+                        402
+                    ],
+                    [
+                        374,
+                        647
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675124,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:08:49.899Z",
+            "updatedAt": "2025-07-20T14:08:49.899Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        360,
+                        524
+                    ],
+                    [
+                        717,
+                        462
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675139,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:08:54.896Z",
+            "updatedAt": "2025-07-20T14:09:09.895Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        719,
+                        462
+                    ],
+                    [
+                        729,
+                        441
+                    ],
+                    [
+                        725,
+                        422
+                    ],
+                    [
+                        705,
+                        391
+                    ],
+                    [
+                        689,
+                        361
+                    ],
+                    [
+                        685,
+                        351
+                    ],
+                    [
+                        685,
+                        335
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675179,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:09:14.048Z",
+            "updatedAt": "2025-07-20T14:09:14.048Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        704,
+                        389
+                    ],
+                    [
+                        348,
+                        401
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675189,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:09:17.795Z",
+            "updatedAt": "2025-07-20T14:09:17.795Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        428,
+                        342
+                    ],
+                    [
+                        435,
+                        397
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675206,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:09:25.026Z",
+            "updatedAt": "2025-07-20T14:09:25.026Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        597,
+                        392
+                    ],
+                    [
+                        587,
+                        338
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675218,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:09:29.419Z",
+            "updatedAt": "2025-07-20T14:09:29.419Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        563,
+                        394
+                    ],
+                    [
+                        553,
+                        339
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675234,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:09:36.801Z",
+            "updatedAt": "2025-07-20T14:09:36.801Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        446,
+                        398
+                    ],
+                    [
+                        455,
+                        473
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675242,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:09:40.072Z",
+            "updatedAt": "2025-07-20T14:09:40.072Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        450,
+                        434
+                    ],
+                    [
+                        470,
+                        434
+                    ],
+                    [
+                        482,
+                        501
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675253,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:09:45.281Z",
+            "updatedAt": "2025-07-20T14:09:45.281Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        454,
+                        456
+                    ],
+                    [
+                        476,
+                        457
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675273,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:09:52.787Z",
+            "updatedAt": "2025-07-20T14:09:52.787Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        100,
+                        189
+                    ],
+                    [
+                        103,
+                        231
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675294,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:10:02.706Z",
+            "updatedAt": "2025-07-20T14:10:02.706Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        174,
+                        269
+                    ],
+                    [
+                        74,
+                        275
+                    ],
+                    [
+                        25,
+                        261
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675305,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:10:07.774Z",
+            "updatedAt": "2025-07-20T14:10:07.774Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        58,
+                        226
+                    ],
+                    [
+                        53,
+                        267
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675334,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:10:18.818Z",
+            "updatedAt": "2025-07-20T14:10:18.818Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        59,
+                        225
+                    ],
+                    [
+                        58,
+                        226
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675342,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:10:22.793Z",
+            "updatedAt": "2025-07-20T14:10:22.793Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        78,
+                        232
+                    ],
+                    [
+                        79,
+                        274
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675357,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:10:29.294Z",
+            "updatedAt": "2025-07-20T14:10:29.294Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        93,
+                        231
+                    ],
+                    [
+                        93,
+                        274
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675365,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:10:32.424Z",
+            "updatedAt": "2025-07-20T14:10:32.424Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        107,
+                        231
+                    ],
+                    [
+                        107,
+                        272
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675372,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:10:36.829Z",
+            "updatedAt": "2025-07-20T14:27:59.501Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        107,
+                        272
+                    ],
+                    [
+                        107,
+                        273
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675379,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:10:41.086Z",
+            "updatedAt": "2025-07-20T14:10:41.086Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        122,
+                        231
+                    ],
+                    [
+                        122,
+                        272
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675389,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:10:45.544Z",
+            "updatedAt": "2025-07-20T14:10:50.098Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        78,
+                        189
+                    ],
+                    [
+                        71,
+                        189
+                    ],
+                    [
+                        56,
+                        200
+                    ],
+                    [
+                        26,
+                        197
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675404,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:10:52.399Z",
+            "updatedAt": "2025-07-20T14:10:52.399Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        25,
+                        215
+                    ],
+                    [
+                        49,
+                        221
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675426,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:11:02.927Z",
+            "updatedAt": "2025-07-20T14:11:02.927Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        135,
+                        186
+                    ],
+                    [
+                        137,
+                        230
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675443,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:11:09.130Z",
+            "updatedAt": "2025-07-20T14:11:09.130Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        140,
+                        230
+                    ],
+                    [
+                        142,
+                        270
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675468,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:11:20.549Z",
+            "updatedAt": "2025-07-20T14:11:20.549Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        106,
+                        347
+                    ],
+                    [
+                        86,
+                        360
+                    ],
+                    [
+                        33,
+                        309
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675488,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:11:30.049Z",
+            "updatedAt": "2025-07-20T14:11:30.049Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        86,
+                        360
+                    ],
+                    [
+                        387,
+                        693
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675496,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:11:33.571Z",
+            "updatedAt": "2025-07-20T14:11:33.571Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        374,
+                        647
+                    ],
+                    [
+                        376,
+                        681
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675518,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:11:42.116Z",
+            "updatedAt": "2025-07-20T14:11:42.116Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        225,
+                        491
+                    ],
+                    [
+                        219,
+                        509
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675540,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:11:50.765Z",
+            "updatedAt": "2025-07-20T14:11:50.765Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        665,
+                        220
+                    ],
+                    [
+                        700,
+                        220
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675555,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:11:55.716Z",
+            "updatedAt": "2025-07-20T14:12:11.705Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        537,
+                        207
+                    ],
+                    [
+                        543,
+                        199
+                    ],
+                    [
+                        549,
+                        195
+                    ],
+                    [
+                        551,
+                        187
+                    ],
+                    [
+                        541,
+                        152
+                    ],
+                    [
+                        540,
+                        147
+                    ],
+                    [
+                        526,
+                        139
+                    ],
+                    [
+                        521,
+                        132
+                    ],
+                    [
+                        519,
+                        130
+                    ],
+                    [
+                        523,
+                        110
+                    ],
+                    [
+                        543,
+                        76
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675603,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:12:16.893Z",
+            "updatedAt": "2025-07-20T14:12:31.208Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        599,
+                        76
+                    ],
+                    [
+                        469,
+                        78
+                    ],
+                    [
+                        465,
+                        72
+                    ],
+                    [
+                        431,
+                        74
+                    ],
+                    [
+                        435,
+                        104
+                    ],
+                    [
+                        469,
+                        117
+                    ],
+                    [
+                        483,
+                        133
+                    ],
+                    [
+                        488,
+                        167
+                    ],
+                    [
+                        496,
+                        191
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675645,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:12:36.201Z",
+            "updatedAt": "2025-07-20T14:12:39.835Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        485,
+                        151
+                    ],
+                    [
+                        497,
+                        146
+                    ],
+                    [
+                        502,
+                        167
+                    ],
+                    [
+                        500,
+                        167
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675669,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:12:45.904Z",
+            "updatedAt": "2025-07-20T14:12:50.018Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        497,
+                        146
+                    ],
+                    [
+                        500,
+                        141
+                    ],
+                    [
+                        507,
+                        138
+                    ],
+                    [
+                        525,
+                        137
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675682,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:12:51.652Z",
+            "updatedAt": "2025-07-20T14:12:51.652Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        512,
+                        138
+                    ],
+                    [
+                        519,
+                        129
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675693,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:12:55.935Z",
+            "updatedAt": "2025-07-20T14:13:04.047Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        600,
+                        62
+                    ],
+                    [
+                        615,
+                        123
+                    ],
+                    [
+                        650,
+                        162
+                    ],
+                    [
+                        664,
+                        187
+                    ],
+                    [
+                        667,
+                        213
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675719,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:13:08.914Z",
+            "updatedAt": "2025-07-20T14:13:16.561Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        672,
+                        56
+                    ],
+                    [
+                        220,
+                        66
+                    ],
+                    [
+                        210,
+                        80
+                    ],
+                    [
+                        199,
+                        61
+                    ],
+                    [
+                        166,
+                        44
+                    ],
+                    [
+                        160,
+                        28
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675745,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:13:20.125Z",
+            "updatedAt": "2025-07-20T14:13:20.125Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        598,
+                        58
+                    ],
+                    [
+                        601,
+                        70
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675759,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:13:26.466Z",
+            "updatedAt": "2025-07-20T14:13:26.466Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        402,
+                        225
+                    ],
+                    [
+                        408,
+                        264
+                    ],
+                    [
+                        412,
+                        274
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675778,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:13:34.538Z",
+            "updatedAt": "2025-07-20T14:13:38.971Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        379,
+                        295
+                    ],
+                    [
+                        391,
+                        295
+                    ],
+                    [
+                        390,
+                        283
+                    ],
+                    [
+                        401,
+                        281
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675791,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:13:40.498Z",
+            "updatedAt": "2025-07-20T14:13:40.498Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        408,
+                        265
+                    ],
+                    [
+                        376,
+                        266
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675807,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:13:47.791Z",
+            "updatedAt": "2025-07-20T14:13:47.791Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        230,
+                        444
+                    ],
+                    [
+                        276,
+                        442
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675816,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:13:51.616Z",
+            "updatedAt": "2025-07-20T14:13:51.616Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        277,
+                        482
+                    ],
+                    [
+                        273,
+                        403
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675834,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:13:58.543Z",
+            "updatedAt": "2025-07-20T14:13:58.543Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        25,
+                        160
+                    ],
+                    [
+                        43,
+                        162
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675842,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:14:01.985Z",
+            "updatedAt": "2025-07-20T14:14:01.985Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        48,
+                        177
+                    ],
+                    [
+                        98,
+                        155
+                    ],
+                    [
+                        271,
+                        152
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675859,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:14:07.446Z",
+            "updatedAt": "2025-07-20T14:14:07.446Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        103,
+                        155
+                    ],
+                    [
+                        89,
+                        124
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675869,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:14:14.355Z",
+            "updatedAt": "2025-07-20T14:14:24.175Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        87,
+                        126
+                    ],
+                    [
+                        83,
+                        98
+                    ],
+                    [
+                        73,
+                        89
+                    ],
+                    [
+                        59,
+                        72
+                    ],
+                    [
+                        27,
+                        85
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675893,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:14:24.504Z",
+            "updatedAt": "2025-07-20T14:14:28.759Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        76,
+                        91
+                    ],
+                    [
+                        61,
+                        95
+                    ],
+                    [
+                        48,
+                        108
+                    ],
+                    [
+                        47,
+                        123
+                    ],
+                    [
+                        50,
+                        138
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "id": 1707675930,
+            "classId": 13982301,
+            "objectId": null,
+            "description": "",
+            "geometryType": "line",
+            "labelerLogin": "Montibot",
+            "createdAt": "2025-07-20T14:14:38.691Z",
+            "updatedAt": "2025-07-20T14:14:38.691Z",
+            "tags": [],
+            "classTitle": "Line",
+            "points": {
+                "exterior": [
+                    [
+                        360,
+                        149
+                    ],
+                    [
+                        414,
+                        149
+                    ]
+                ],
+                "interior": []
+            }
+        }
+    ]
+        // ... (continue with all your objects, no trailing comma after the last one) ...
+    
+};
+//LINEMAP_JSON_END
+
+            // Build graph from linemap
+            function buildGraphFromLinemap(linemap) {
+                const nodes = new Map(); // key: "x,y", value: {x, y, edges: Set of neighbor keys}
+                function addEdge(a, b) {
+                    const keyA = a.join(",");
+                    const keyB = b.join(",");
+                    if (!nodes.has(keyA)) nodes.set(keyA, { x: a[0], y: a[1], edges: new Set() });
+                    if (!nodes.has(keyB)) nodes.set(keyB, { x: b[0], y: b[1], edges: new Set() });
+                    nodes.get(keyA).edges.add(keyB);
+                    nodes.get(keyB).edges.add(keyA);
+                }
+                for (const obj of linemap.objects) {
+                    if (obj.geometryType === "line" && obj.points && obj.points.exterior.length > 1) {
+                        const pts = obj.points.exterior;
+                        for (let i = 0; i < pts.length - 1; i++) {
+                            addEdge(pts[i], pts[i + 1]);
+                        }
+                    }
+                }
+                return nodes;
+            }
+            function buildGraphFromLinemap(linemap) {
+                const nodes = new Map(); // key: "x,y", value: {x, y, edges: Set of neighbor keys}
+                function addEdge(a, b) {
+                    const keyA = a.join(",");
+                    const keyB = b.join(",");
+                    if (!nodes.has(keyA)) nodes.set(keyA, { x: a[0], y: a[1], edges: new Set() });
+                    if (!nodes.has(keyB)) nodes.set(keyB, { x: b[0], y: b[1], edges: new Set() });
+                    nodes.get(keyA).edges.add(keyB);
+                    nodes.get(keyB).edges.add(keyA);
+                }
+                for (const obj of linemap.objects) {
+                    if (obj.geometryType === "line" && obj.points && obj.points.exterior.length > 1) {
+                        const pts = obj.points.exterior;
+                        for (let i = 0; i < pts.length - 1; i++) {
+                            addEdge(pts[i], pts[i + 1]);
+                        }
+                    }
+                }
+                return nodes;
+            }
+            const linemapGraph = buildGraphFromLinemap(linemapData);
+
+            // Find nearest node in graph to a given [x, y]
+            function findNearestNode(x, y, graph) {
+                let minDist = Infinity, nearest = null;
+                for (const node of graph.values()) {
+                    const dx = node.x - x, dy = node.y - y;
+                    const dist = dx * dx + dy * dy;
+                    if (dist < minDist) {
+                        minDist = dist;
+                        nearest = node;
+                    }
+                }
+                return nearest;
+            }
+
+            // Dijkstra's algorithm for shortest path in the graph
+            function dijkstra(graph, startKey, endKey) {
+                const dist = new Map();
+                const prev = new Map();
+                const visited = new Set();
+                const pq = new Set(graph.keys());
+                for (const key of graph.keys()) {
+                    dist.set(key, Infinity);
+                }
+                dist.set(startKey, 0);
+                while (pq.size > 0) {
+                    let u = null, minDist = Infinity;
+                    for (const key of pq) {
+                        if (dist.get(key) < minDist) {
+                            minDist = dist.get(key);
+                            u = key;
+                        }
+                    }
+                    if (u === null || u === endKey) break;
+                    pq.delete(u);
+                    visited.add(u);
+                    const uNode = graph.get(u);
+                    for (const v of uNode.edges) {
+                        if (visited.has(v)) continue;
+                        const vNode = graph.get(v);
+                        const alt = dist.get(u) + Math.hypot(uNode.x - vNode.x, uNode.y - vNode.y);
+                        if (alt < dist.get(v)) {
+                            dist.set(v, alt);
+                            prev.set(v, u);
+                        }
+                    }
+                }
+                // Reconstruct path
+                const path = [];
+                let u = endKey;
+                if (prev.has(u) || u === startKey) {
+                    while (u) {
+                        path.unshift(u);
+                        u = prev.get(u);
+                    }
+                }
+                return path;
+            }
+
+            // Remove old populateLocationDropdowns function (no longer needed)
+
+            // Multi-pin logic (single Pin Locations dropdown)
+            let pinCoords = [];
+            function clearPins() {
+                pinCoords = [];
+                document.querySelectorAll('.pin-marker').forEach(el => el.remove());
+                const existingRoute = document.getElementById('route-svg');
+                if (existingRoute) existingRoute.remove();
+            }
+            document.getElementById('clear-pins').addEventListener('click', clearPins);
+
+            // Pinning mode logic
+            let pinningMode = false;
+            document.getElementById('add-pin-location').addEventListener('click', function() {
+                pinningMode = true;
+                this.textContent = 'Click on the map to pin location';
+            });
+            // Place pin on map click (only if pinningMode is true)
+            mapElement.addEventListener('click', function(e) {
+                if (!pinningMode) return;
+                const rect = mapElement.getBoundingClientRect();
+                const x = Math.round(e.clientX - rect.left);
+                const y = Math.round(e.clientY - rect.top);
+                pinCoords.push({ x, y });
+                placePin(x, y, `pin-${pinCoords.length - 1}`);
+                pinningMode = false;
+                document.getElementById('add-pin-location').textContent = 'Pin Location';
+            });
+
+            // Place pin from dropdown selection
+            const pinLocationSelect = document.getElementById('pin-location');
+            pinLocationSelect.addEventListener('change', () => {
+                const locName = pinLocationSelect.value;
+                if (locName && campusLocations[locName]) {
+                    const locData = campusLocations[locName];
+                    pinCoords.push({ x: locData.pixelX, y: locData.pixelY });
+                    placePin(locData.pixelX, locData.pixelY, `pin-${pinCoords.length - 1}`);
+                }
+                pinLocationSelect.value = '';
+            });
+
+            // Populate Pin Locations dropdown (and remove old function if present)
+            function populatePinLocationDropdown() {
+                const pinLocationSelect = document.getElementById('pin-location');
+                pinLocationSelect.innerHTML = '<option value="">Select a location to pin</option>';
+                for (const key in campusLocations) {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = key;
+                    pinLocationSelect.appendChild(option);
+                }
+            }
+            populatePinLocationDropdown();
+
+            // Simulate map loading and display
+            console.log('Starting map loading simulation');
+            (function loadMap() {
+                console.log('Map loading complete, updating UI');
+                mapElement.classList.remove('loading');
+                console.log('Removed loading class from mapElement');
+                mapElement.innerHTML = ''; // Clear spinner
+                console.log('Cleared innerHTML of mapElement');
+                mapOverlay.style.display = 'flex';
+                console.log('Set mapOverlay display to flex:', mapOverlay.style.display);
+                mapElement.style.backgroundImage = "url('https://i.postimg.cc/KzS7YM1v/UP-Diliman-Campus-Map-Brent-Antigua.jpg')"; // Example placeholder image
+                // Ensure dropdown is visible
+                pinLocationSelect.style.display = 'block';
+            })();
+
+            // Schedule display logic removed
+
+            // Function to calculate distance based on grid coordinates (simplified)
+            function calculateGridDistance(grid1, grid2) {
+                // Example: A3 -> (0,2), D7 -> (3,6)
+                // This is a very simplified Euclidean distance for grid cells.
+                // Real-world distance would be more complex.
+                const parseGrid = (grid) => {
+                    // Handle multi-grid labels like "F1, F2" by taking the first one
+                    const mainGrid = grid.split(',')[0].trim();
+                    const col = mainGrid.charCodeAt(0) - 'A'.charCodeAt(0);
+                    const row = parseInt(mainGrid.substring(1)) - 1; // Assuming 1-indexed rows
+                    return { col, row };
+                };
+
+                const g1 = parseGrid(grid1);
+                const g2 = parseGrid(grid2);
+
+                const dx = g1.col - g2.col;
+                const dy = g1.row - g2.row;
+
+                // Using Manhattan distance for a grid-like path
+                return Math.abs(dx) + Math.abs(dy);
+            }
+
+            // Function to place a pin on the map
+
+            // Function to open modal for pinning start location
+            function openModalForStartPin() {
+                // Removed modal pinning feature as per user request
+                alert('The popup map feature has been removed as per your request.');
+            }
+
+            // Removed modal close button functionality as modal is removed
+
+            // Event listener for map clicks to place pins
+            mapElement.addEventListener('click', function(e) {
+                if (!currentPinningMode) return;
+
+                const rect = mapElement.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                // Find the closest campus location to the clicked point
+                let closestLocation = null;
+                let minDistance = Infinity;
+
+                for (const key in campusLocations) {
+                    const loc = campusLocations[key];
+                    const dist = Math.sqrt(Math.pow(x - loc.pixelX, 2) + Math.pow(y - loc.pixelY, 2));
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        closestLocation = key;
+                    }
+                }
+
+                if (closestLocation) {
+                    const locData = campusLocations[closestLocation];
+                    placePin(locData.pixelX, locData.pixelY, currentPinningMode);
+
+                    if (currentPinningMode === 'start') {
+                        startLocationSelect.value = closestLocation;
+                    } else {
+                        endLocationSelect.value = closestLocation;
+                    }
+                    // Save the pin type before resetting currentPinningMode
+                    const pinnedType = currentPinningMode;
+                    currentPinningMode = null; // Exit pinning mode
+                    alert(`Pinned ${closestLocation} as ${pinnedType === 'start' ? 'Start' : 'End'} Location.`);
+                } else {
+                    alert('No nearby campus location found. Try clicking closer to a building.');
+                }
+            });
+
+
+        // Function to draw route lines connecting points on the map
+        function drawRouteLines(points) {
+            let svg = document.getElementById('route-svg');
+            if (svg) svg.remove();
+
+            svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('id', 'route-svg');
+            Object.assign(svg.style, {
+                position: 'absolute',
+                top: '0',
+                left: '0',
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+            });
+            mapElement.appendChild(svg);
+
+            for (let i = 0; i < points.length - 1; i++) {
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', points[i].x);
+                line.setAttribute('y1', points[i].y);
+                line.setAttribute('x2', points[i + 1].x);
+                line.setAttribute('y2', points[i + 1].y);
+                line.setAttribute('stroke', 'var(--primary)');
+                line.setAttribute('stroke-width', '4');
+                line.setAttribute('class', 'route-line');
+                line.setAttribute('stroke-linecap', 'round');
+                svg.appendChild(line);
+            }
+        }
+
+        // Debug overlay: show all pathway nodes and building locations
+        let debugOverlayVisible = false;
+        function drawDebugOverlay() {
+            let svg = document.getElementById('debug-svg');
+            if (svg) svg.remove();
+            if (!debugOverlayVisible) return;
+            svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('id', 'debug-svg');
+            Object.assign(svg.style, {
+                position: 'absolute',
+                top: '0',
+                left: '0',
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+                zIndex: 99
+            });
+            // Draw pathway nodes only
+            for (const node of linemapGraph.values()) {
+            const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            c.setAttribute('cx', node.x);
+            c.setAttribute('cy', node.y);
+            c.setAttribute('r', 4);
+            c.setAttribute('fill', '#00bcd4');
+            c.setAttribute('opacity', '0.7');
+            svg.appendChild(c);
+            }
+            mapElement.appendChild(svg);
+        }
+        // Removed toggle-debug-overlay event listener (element no longer exists)
+        // Redraw overlay on map resize or load
+        window.addEventListener('resize', drawDebugOverlay);
+        window.addEventListener('load', drawDebugOverlay);
+
+        // Modified placePin function to handle class pins with labels
+        function placePin(x, y, type) {
+            let pin = document.createElement('div');
+            pin.className = 'pin-marker';
+            if (type === 'start') {
+                pin.textContent = 'A';
+                if (startPin && startPin.parentNode === mapElement) mapElement.removeChild(startPin);
+                startPin = pin;
+            } else if (type === 'end') {
+                pin.textContent = 'B';
+                if (endPin && endPin.parentNode === mapElement) mapElement.removeChild(endPin);
+                endPin = pin;
+            } else if (type.startsWith('pin-')) {
+                const index = parseInt(type.split('-')[1]);
+                pin.textContent = String.fromCharCode(65 + index); // 'A', 'B', 'C', ...
+            } else if (type.startsWith('class-')) {
+                const index = parseInt(type.split('-')[1]);
+                pin.textContent = index + 1;
+            } else {
+                pin.textContent = '?';
+            }
+            pin.style.left = `${x}px`;
+            pin.style.top = `${y}px`;
+            mapElement.appendChild(pin);
+        }
+
+        // Calculate route and display results
+        calculateButton.addEventListener('click', function () {
+            try {
+                if (pinCoords.length < 2) {
+                    alert('Please place at least two pins on the map.');
+                    return;
+                }
+                // Draw lines between pins
+                drawRouteLines(pinCoords);
+                // Calculate total straight-line distance
+                let totalDistance = 0;
+                for (let i = 0; i < pinCoords.length - 1; i++) {
+                    const dx = pinCoords[i + 1].x - pinCoords[i].x;
+                    const dy = pinCoords[i + 1].y - pinCoords[i].y;
+                    totalDistance += Math.hypot(dx, dy);
+                }
+                const distKm = (totalDistance * 0.0005).toFixed(2);
+                const time = Math.round((totalDistance * 0.0005) / (5 / 60)); // minutes
+                walkTimeElement.textContent = `${time} mins`;
+                distanceElement.textContent = `${distKm} km`;
+                routeDescriptionElement.innerHTML = `
+                    <p><strong>Route:</strong> ${pinCoords.map((p, i) => String.fromCharCode(65 + i)).join(' → ')}</p>
+                    <p>Estimated time: <strong>${time} minutes</strong>, distance: <strong>${distKm} km</strong>.</p>
+                    <p style=\"color: green;\"><i class=\"fas fa-clock\"></i> Leave at least ${time + 5} mins before arrival.</p>
+                    <p style=\"color: #b22222; font-size: 0.95em;\">Note: The calculated route is a direct line between pins.</p>
+                `;
+                resultContainer.style.display = 'block';
+            } catch (error) {
+                console.error('Error calculating route:', error);
+            }
+        });
+    });
+
+    </script>
+</body>
+</html>
+
